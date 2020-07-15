@@ -1,0 +1,51 @@
+name: Build stable FFmpeg
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+      
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+          fetch-depth: 1
+          
+      - name: Install dependencies
+        run: ./dependencies.sh
+        
+      - name: Move helpers
+        run: mv -v ./ffmpeg-windows-build-helpers/* ./
+          
+      - name: Compile FFmpeg
+        run: ./cross_compile_ffmpeg.sh --ffmpeg-git-checkout-version=n4.3.1 --gcc-cpu-count=2 --disable-nonfree=n --sandbox-ok=y --compiler-flavors=multi
+          
+      - name: Upload FFmpeg with FDK AAC
+        uses: actions/upload-artifact@v2
+        with:
+          name: ffmpeg-win64-nonfree
+          path: sandbox/win64/ffmpeg_git_with_fdk_aac/ffmpeg.exe
+          
+      - name: Upload FFmpeg GPL
+        uses: actions/upload-artifact@v2
+        with:
+          name: ffmpeg-win64-gpl
+          path: sandbox/cross_compilers/mingw-w64-x86_64/x86_64-w64-mingw32/bin/ffmpeg.exe
+          
+      - name: Upload FFplay with FDK AAC
+        uses: actions/upload-artifact@v2
+        with:
+          name: ffplay-win64-nonfree
+          path: sandbox/win64/ffmpeg_git_with_fdk_aac/ffplay.exe
+          
+      - name: Upload FFplay GPL
+        uses: actions/upload-artifact@v2
+        with:
+          name: ffplay-win64-gpl
+          path: sandbox/cross_compilers/mingw-w64-x86_64/x86_64-w64-mingw32/bin/ffplay.exe

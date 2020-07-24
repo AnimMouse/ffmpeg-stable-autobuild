@@ -5,7 +5,7 @@ on:
       - master
       
 env:
-  ffmpeg-version: n4.3.1
+  ffmpeg_version: n4.3.1
       
 jobs:
   build:
@@ -24,13 +24,13 @@ jobs:
         run: mv -v ./ffmpeg-windows-build-helpers/* ./
           
       - name: Compile FFmpeg using ffmpeg-windows-build-helpers
-        run: ./cross_compile_ffmpeg.sh --ffmpeg-git-checkout-version=$ffmpeg-version --gcc-cpu-count=2 --disable-nonfree=n --sandbox-ok=y --compiler-flavors=multi
+        run: ./cross_compile_ffmpeg.sh --ffmpeg-git-checkout-version=$ffmpeg_version --gcc-cpu-count=2 --disable-nonfree=n --sandbox-ok=y --compiler-flavors=multi
           
       - name: Upload FFmpeg win64 with FDK AAC
         uses: actions/upload-artifact@v2
         with:
           name: ffmpeg-win64-nonfree
-          path: sandbox/win64/ffmpeg_git_with_fdk_aac_${{ env.ffmpeg-version }}/ffmpeg.exe
+          path: sandbox/win64/ffmpeg_git_with_fdk_aac_${{ env.ffmpeg_version }}/ffmpeg.exe
           
       - name: Upload FFmpeg win64 GPL
         uses: actions/upload-artifact@v2
@@ -42,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ffplay-win64-nonfree
-          path: sandbox/win64/ffmpeg_git_with_fdk_aac_${{ env.ffmpeg-version }}/ffplay.exe
+          path: sandbox/win64/ffmpeg_git_with_fdk_aac_${{ env.ffmpeg_version }}/ffplay.exe
           
       - name: Upload FFplay win64 GPL
         uses: actions/upload-artifact@v2
@@ -54,7 +54,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ffmpeg-win32-nonfree
-          path: sandbox/win32/ffmpeg_git_with_fdk_aac_${{ env.ffmpeg-version }}/ffmpeg.exe
+          path: sandbox/win32/ffmpeg_git_with_fdk_aac_${{ env.ffmpeg_version }}/ffmpeg.exe
           
       - name: Upload FFmpeg win32 GPL
         uses: actions/upload-artifact@v2
@@ -66,7 +66,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ffplay-win32-nonfree
-          path: sandbox/win32/ffmpeg_git_with_fdk_aac_${{ env.ffmpeg-version }}/ffplay.exe
+          path: sandbox/win32/ffmpeg_git_with_fdk_aac_${{ env.ffmpeg_version }}/ffplay.exe
           
       - name: Upload FFplay win32 GPL
         uses: actions/upload-artifact@v2

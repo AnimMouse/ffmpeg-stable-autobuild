@@ -22,9 +22,22 @@ jobs:
         
       - name: Move ffmpeg-windows-build-helpers
         run: mv -v ./ffmpeg-windows-build-helpers/* ./
+        
+      - name: Cache sandbox
+        uses: actions/cache@v2
+        with:
+          path: |
+            sandbox
+            !sandbox/**/*.exe
+          key: ${{ runner.os }}-sandbox
           
       - name: Compile FFmpeg using ffmpeg-windows-build-helpers
         run: ./cross_compile_ffmpeg.sh --ffmpeg-git-checkout-version=$ffmpeg_version --gcc-cpu-count=2 --disable-nonfree=n --sandbox-ok=y --compiler-flavors=multi
+        
+      - name: List sandbox
+        run: |
+          cd sandbox
+          ls
           
       - name: Upload FFmpeg win64 with FDK AAC
         uses: actions/upload-artifact@v2
@@ -128,7 +141,7 @@ jobs:
     steps:
       - name: Download all builds
         uses: actions/download-artifact@v2
-          
+        
       - name: Create Release
         id: create-release
         uses: actions/create-release@v1

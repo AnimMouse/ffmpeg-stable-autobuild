@@ -9,10 +9,12 @@ Version: n4.3.1
 
 [Downloads](https://github.com/AnimMouse/ffmpeg-autobuild/releases)
 
-GPL and nonfree (with FDK AAC) included.
+GPL and nonfree (with FDK AAC & DeckLink) included.
 
 Powered by [ffmpeg-windows-build-helpers](https://github.com/rdp/ffmpeg-windows-build-helpers) script to cross compile for Windows on Linux.
 
 Uses [GitHub Actions](https://github.com/features/actions) to automatically compile FFmpeg.
 
-For latest development builds for Windows, goto [ffmpeg-autobuild](https://github.com/AnimMouse/ffmpeg-autobuild)
+For stability, use release builds.
+
+For latest git/snapshot/development builds for Windows, goto [ffmpeg-autobuild](https://github.com/AnimMouse/ffmpeg-autobuild)

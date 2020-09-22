@@ -9,6 +9,8 @@ Version: n4.3.1
 
 [Downloads](https://github.com/AnimMouse/ffmpeg-stable-autobuild/releases)
 
+ffmpeg, ffprobe, and ffplay are included.
+
 GPL and nonfree (with FDK AAC & DeckLink) included.
 
 Powered by [ffmpeg-windows-build-helpers](https://github.com/rdp/ffmpeg-windows-build-helpers) script to cross compile for Windows on Linux.

@@ -21,6 +21,8 @@ Powered by [ffmpeg-windows-build-helpers](https://github.com/rdp/ffmpeg-windows-
 
 Uses [GitHub Actions](https://github.com/features/actions) to automatically compile FFmpeg.
 
+Uses [Dependabot](https://dependabot.com/) to automatically update submodules.
+
 For stability, use release builds.
 
 For latest git/snapshot/development builds for Windows, goto [ffmpeg-autobuild](https://github.com/AnimMouse/ffmpeg-autobuild)

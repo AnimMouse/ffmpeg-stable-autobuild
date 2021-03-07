@@ -5,7 +5,7 @@
 
 [FFmpeg](https://ffmpeg.org/) stable nonfree release builds with additional libraries/dependencies.
 
-Version: n4.3.1
+Version: n4.3.2
 
 [Downloads](https://github.com/AnimMouse/ffmpeg-stable-autobuild/releases)
 

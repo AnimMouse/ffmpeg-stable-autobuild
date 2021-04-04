@@ -83,7 +83,6 @@ jobs:
         
       - name: Move FFmpeg builds
         run: |
-          mkdir ffmpeg-${{ matrix.os }} ffmpeg-win32
           mv -v ./ffmpeg-${ffmpeg_version}-${{needs.build.outputs.helper-git-sha}}-${{ matrix.os }}-nonfree/ffmpeg.exe ./
           mv -v ./ffprobe-${ffmpeg_version}-${{needs.build.outputs.helper-git-sha}}-${{ matrix.os }}-nonfree/ffprobe.exe ./
           mv -v ./ffplay-${ffmpeg_version}-${{needs.build.outputs.helper-git-sha}}-${{ matrix.os }}-nonfree/ffplay.exe ./

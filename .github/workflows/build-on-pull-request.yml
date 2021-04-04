@@ -2,9 +2,9 @@ name: Build FFmpeg on pull request
 on:
   pull_request:
     branches:
-      - master
+      - main
     paths-ignore:
-      - 'README.md'
+      - README.md
       
 env:
   ffmpeg_version: n4.3.2
@@ -12,85 +12,115 @@ env:
 jobs:
   build:
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        os: [win64, win32]
+        
     steps:
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@v4
-        with:
-          root-reserve-mb: 512
-          swap-size-mb: 1024
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          
       - name: Checkout
         uses: actions/checkout@v2
         with:
           submodules: true
-          fetch-depth: 1
           
       - name: Install dependencies
         run: ./dependencies.sh
         
+      - name: Get current ffmpeg-windows-build-helpers git commit SHA
+        id: helper-git-sha
+        working-directory: ffmpeg-windows-build-helpers
+        run: echo "::set-output name=git-sha::$(git rev-parse --short HEAD)"
+        
       - name: Move ffmpeg-windows-build-helpers
         run: mv -v ./ffmpeg-windows-build-helpers/* ./
         
+      - name: Get current date & time before build
+        id: date-time-before
+        run: echo "::set-output name=date-time::$(date +'%Y-%m-%d %H:%M')"
+        
       - name: Compile FFmpeg using ffmpeg-windows-build-helpers
-        run: ./cross_compile_ffmpeg.sh --ffmpeg-git-checkout-version=$ffmpeg_version --gcc-cpu-count=2 --disable-nonfree=n --sandbox-ok=y --compiler-flavors=multi
+        run: ./cross_compile_ffmpeg.sh --ffmpeg-git-checkout-version=$ffmpeg_version --gcc-cpu-count=2 --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{matrix.os}}
         
-      - name: 7-Zip FFmpeg win64 nonfree
-        working-directory: sandbox/win64/ffmpeg_git_with_fdk_aac_${{ env.ffmpeg_version }}
-        run: 7z a ffmpeg-win64-nonfree.7z ffmpeg.exe ffprobe.exe ffplay.exe -mx=9
-        
-      - name: 7-Zip FFmpeg win32 nonfree
-        working-directory: sandbox/win32/ffmpeg_git_with_fdk_aac_${{ env.ffmpeg_version }}
-        run: 7z a ffmpeg-win32-nonfree.7z ffmpeg.exe ffprobe.exe ffplay.exe -mx=9
-        
-      - name: Upload FFmpeg win64 nonfree
+      - name: Get current date & time after build
+        id: date-time-after
+        run: |
+          echo "::set-output name=date-time::$(date +'%Y-%m-%d %H:%M')"
+          echo "::set-output name=date-time-tag::$(date +'%Y-%m-%d-%H-%M')"
+          
+      - name: Upload FFmpeg ${{ matrix.os }} nonfree
         uses: actions/upload-artifact@v2
         with:
-          name: ffmpeg-${{ env.ffmpeg_version }}-win64-nonfree
-          path: sandbox/win64/ffmpeg_git_with_fdk_aac_${{ env.ffmpeg_version }}/ffmpeg-win64-nonfree.7z
+          name: ffmpeg-${{ env.ffmpeg_version }}-${{ steps.helper-git-sha.outputs.git-sha }}-${{ matrix.os }}-nonfree
+          path: sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_${{ env.ffmpeg_version }}/ffmpeg.exe
           
-      - name: Upload FFmpeg win32 nonfree
+      - name: Upload FFprobe ${{ matrix.os }} nonfree
         uses: actions/upload-artifact@v2
         with:
-          name: ffmpeg-${{ env.ffmpeg_version }}-win32-nonfree
-          path: sandbox/win32/ffmpeg_git_with_fdk_aac_${{ env.ffmpeg_version }}/ffmpeg-win32-nonfree.7z
+          name: ffprobe-${{ env.ffmpeg_version }}-${{ steps.helper-git-sha.outputs.git-sha }}-${{ matrix.os }}-nonfree
+          path: sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_${{ env.ffmpeg_version }}/ffprobe.exe
           
-  release:
+      - name: Upload FFplay ${{ matrix.os }} nonfree
+        uses: actions/upload-artifact@v2
+        with:
+          name: ffplay-${{ env.ffmpeg_version }}-${{ steps.helper-git-sha.outputs.git-sha }}-${{ matrix.os }}-nonfree
+          path: sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_${{ env.ffmpeg_version }}/ffplay.exe
+          
+    outputs:
+      date-time-before: ${{ steps.date-time-before.outputs.date-time }}
+      date-time-after: ${{ steps.date-time-after.outputs.date-time }}
+      date-time-after-tag: ${{ steps.date-time-after.outputs.date-time-tag }}
+      helper-git-sha: ${{ steps.helper-git-sha.outputs.git-sha }}
+      
+  archive:
     needs: build
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        os: [win64, win32]
+        
     steps:
       - name: Download all builds
         uses: actions/download-artifact@v2
         
-      - name: Create Release
-        id: create-release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: "a#${{ github.run_number }}"
-          release_name: "${{ env.ffmpeg_version }} Auto #${{ github.run_number }}"
-          draft: false
-          prerelease: true
+      - name: Move FFmpeg builds
+        run: |
+          mkdir ffmpeg-${{ matrix.os }} ffmpeg-win32
+          mv -v ./ffmpeg-${ffmpeg_version}-${{needs.build.outputs.helper-git-sha}}-${{ matrix.os }}-nonfree/ffmpeg.exe ./
+          mv -v ./ffprobe-${ffmpeg_version}-${{needs.build.outputs.helper-git-sha}}-${{ matrix.os }}-nonfree/ffprobe.exe ./
+          mv -v ./ffplay-${ffmpeg_version}-${{needs.build.outputs.helper-git-sha}}-${{ matrix.os }}-nonfree/ffplay.exe ./
           
-      - name: Upload FFmpeg win64 nonfree Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 7-Zip FFmpeg ${{ matrix.os }} nonfree
+        run: 7z a ffmpeg-${ffmpeg_version}-${{needs.build.outputs.helper-git-sha}}-${{matrix.os}}-nonfree.7z ffmpeg.exe ffprobe.exe ffplay.exe -mx9
+        
+      - name: Upload FFmpeg archive ${{ matrix.os }} nonfree
+        uses: actions/upload-artifact@v2
         with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ffmpeg-${{ env.ffmpeg_version }}-win64-nonfree/ffmpeg-win64-nonfree.7z
-          asset_name: ffmpeg-${{ env.ffmpeg_version }}-win64-nonfree.7z
-          asset_content_type: application/x-7z-compressed
+          name: ffmpeg-archive-${{ env.ffmpeg_version }}-${{ needs.build.outputs.helper-git-sha }}-${{ matrix.os }}-nonfree
+          path: ffmpeg-${{ env.ffmpeg_version }}-${{ needs.build.outputs.helper-git-sha }}-${{ matrix.os }}-nonfree.7z
           
-      - name: Upload FFmpeg win32 nonfree Release Asset
-        uses: actions/upload-release-asset@v1
+  release:
+    needs: [build, archive]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Download FFmpeg win64 archive
+        uses: actions/download-artifact@v2
+        with:
+          name: ffmpeg-archive-${{ env.ffmpeg_version }}-${{ needs.build.outputs.helper-git-sha }}-win64-nonfree
+          
+      - name: Download FFmpeg win32 archive
+        uses: actions/download-artifact@v2
+        with:
+          name: ffmpeg-archive-${{ env.ffmpeg_version }}-${{ needs.build.outputs.helper-git-sha }}-win32-nonfree
+          
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Auto ${{ env.ffmpeg_version }} ${{ needs.build.outputs.date-time-after }} ${{ needs.build.outputs.helper-git-sha }}
+          tag_name: a-${{ needs.build.outputs.date-time-after-tag }}
+          body: |
+            FFmpeg nonfree ${{ env.ffmpeg_version }} built on ${{ needs.build.outputs.date-time-after }} started at ${{ needs.build.outputs.date-time-before }}
+            Using ffmpeg-windows-build-helpers git-${{ needs.build.outputs.helper-git-sha }}
+          files: |
+            ffmpeg-${{ env.ffmpeg_version }}-${{ needs.build.outputs.helper-git-sha }}-win64-nonfree.7z
+            ffmpeg-${{ env.ffmpeg_version }}-${{ needs.build.outputs.helper-git-sha }}-win32-nonfree.7z
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: ffmpeg-${{ env.ffmpeg_version }}-win32-nonfree/ffmpeg-win32-nonfree.7z
-          asset_name: ffmpeg-${{ env.ffmpeg_version }}-win32-nonfree.7z
-          asset_content_type: application/x-7z-compressed

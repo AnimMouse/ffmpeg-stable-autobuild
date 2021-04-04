@@ -25,4 +25,4 @@ Uses [Dependabot](https://dependabot.com/) to automatically update submodules.
 
 For stability, use release builds.
 
-For latest git/snapshot/development builds for Windows, goto [ffmpeg-autobuild](https://github.com/AnimMouse/ffmpeg-autobuild)
+For latest git/snapshot/development/master/nightly builds for Windows, goto [ffmpeg-autobuild](https://github.com/AnimMouse/ffmpeg-autobuild)

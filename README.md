@@ -11,6 +11,10 @@ Version: n4.4
 
 Schedule of builds: Every time [ffmpeg-windows-build-helpers](https://github.com/rdp/ffmpeg-windows-build-helpers) updates or I updated the repository or when FFmpeg makes a new major release.
 
+#### Release Retention Policy
+Release builds are kept for two years.\
+Last 1 pre-release build are kept every time a release build are released.
+
 ffmpeg, ffprobe, and ffplay are included.
 
 Nonfree builds with Fraunhofer FDK AAC (libfdk_aac) & DeckLink.

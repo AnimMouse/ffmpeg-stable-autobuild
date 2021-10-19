@@ -75,7 +75,7 @@ jobs:
       
   archive:
     needs: build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         os: [win64, win32]
@@ -107,7 +107,7 @@ jobs:
           
   release:
     needs: [build, archive]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Download FFmpeg archive win64
         uses: actions/download-artifact@v2
@@ -131,16 +131,16 @@ jobs:
             ffmpeg-${{ env.ffmpeg_version }}-${{ needs.build.outputs.helper-git-sha }}-win64-nonfree.7z
             ffmpeg-${{ env.ffmpeg_version }}-${{ needs.build.outputs.helper-git-sha }}-win32-nonfree.7z
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
           
   delete_old:
     name: Delete older pre-releases
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Delete older pre-releases
         uses: dev-drprasad/delete-older-releases@v0.2.0
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           keep_latest: 1
           delete_tags: true

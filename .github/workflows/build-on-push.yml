@@ -41,7 +41,7 @@ jobs:
         run: echo "::set-output name=date-time::$(date +'%Y-%m-%d %H:%M')"
         
       - name: Compile FFmpeg using ffmpeg-windows-build-helpers
-        run: ./cross_compile_ffmpeg.sh --ffmpeg-git-checkout-version=$ffmpeg_version --gcc-cpu-count=2 --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{matrix.os}}
+        run: ./cross_compile_ffmpeg.sh --ffmpeg-git-checkout-version=$ffmpeg_version --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{matrix.os}}
         
       - name: Get current date & time after build
         id: date-time-after
@@ -130,18 +130,16 @@ jobs:
           files: |
             ffmpeg-${{ env.ffmpeg_version }}-${{ needs.build.outputs.helper-git-sha }}-win64-nonfree.7z
             ffmpeg-${{ env.ffmpeg_version }}-${{ needs.build.outputs.helper-git-sha }}-win32-nonfree.7z
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          
+            
   delete_old:
     name: Delete older pre-releases
     runs-on: ubuntu-latest
     steps:
       - name: Delete older pre-releases
         uses: dev-drprasad/delete-older-releases@v0.2.0
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
         with:
           keep_latest: 1
           delete_tags: true
           delete_tag_pattern: a
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

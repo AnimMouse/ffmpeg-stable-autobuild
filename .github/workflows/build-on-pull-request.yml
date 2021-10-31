@@ -8,7 +8,7 @@ on:
       - .github/dependabot.yml
       
 env:
-  ffmpeg_version: n4.4
+  ffmpeg_version: n4.4.1
   
 jobs:
   build:

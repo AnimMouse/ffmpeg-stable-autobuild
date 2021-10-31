@@ -9,7 +9,7 @@ on:
       - .github/workflows/build-on-pull-request.yml
       
 env:
-  ffmpeg_version: n4.4
+  ffmpeg_version: n4.4.1
   
 jobs:
   build:

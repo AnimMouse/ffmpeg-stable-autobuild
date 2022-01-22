@@ -1,14 +1,14 @@
 name: Build FFmpeg on pull request
 on:
   pull_request_target:
-    branches:
-      - main
-    paths-ignore:
-      - README.md
-      - .github/dependabot.yml
+    paths:
+      - ffmpeg-windows-build-helpers/**
+      - dependencies.sh
+      - .github/workflows/build-on-push.yml
+      - .github/workflows/build-on-pull-request.yml
       
 env:
-  ffmpeg_version: n4.4.1
+  ffmpeg_version: n5.0
   
 jobs:
   build:

@@ -1,15 +1,13 @@
 name: Build FFmpeg on push
 on:
   push:
-    branches:
-      - main
-    paths-ignore:
-      - README.md
-      - .github/dependabot.yml
-      - .github/workflows/build-on-pull-request.yml
+    paths:
+      - ffmpeg-windows-build-helpers/**
+      - dependencies.sh
+      - .github/workflows/build-on-push.yml
       
 env:
-  ffmpeg_version: n4.4.1
+  ffmpeg_version: n5.0
   
 jobs:
   build:

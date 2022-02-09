@@ -2,7 +2,7 @@ name: Build FFmpeg on pull request
 on:
   pull_request_target:
     paths:
-      - ffmpeg-windows-build-helpers/**
+      - ffmpeg-windows-build-helpers
       - dependencies.sh
       - .github/workflows/build-on-push.yml
       - .github/workflows/build-on-pull-request.yml
@@ -19,7 +19,7 @@ jobs:
         os: [win64, win32]
         
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v2
         with:
           submodules: true
@@ -33,23 +33,23 @@ jobs:
       - name: Get current ffmpeg-windows-build-helpers git commit SHA
         id: helper-git-sha
         working-directory: ffmpeg-windows-build-helpers
-        run: echo "::set-output name=git-sha::$(git rev-parse --short HEAD)"
+        run: echo ::set-output name=git-sha::$(git rev-parse --short HEAD)
         
       - name: Move ffmpeg-windows-build-helpers
         run: mv -v ./ffmpeg-windows-build-helpers/* ./
         
       - name: Get current date & time before build
         id: date-time-before
-        run: echo "::set-output name=date-time::$(date +'%Y-%m-%d %H:%M')"
+        run: echo ::set-output name=date-time::$(date +'%Y-%m-%d %H:%M')
         
       - name: Compile FFmpeg using ffmpeg-windows-build-helpers
-        run: ./cross_compile_ffmpeg.sh --ffmpeg-git-checkout-version=$ffmpeg_version --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{matrix.os}}
+        run: ./cross_compile_ffmpeg.sh --ffmpeg-git-checkout-version=$ffmpeg_version --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
         
       - name: Get current date & time after build
         id: date-time-after
         run: |
-          echo "::set-output name=date-time::$(date +'%Y-%m-%d %H:%M')"
-          echo "::set-output name=date-time-tag::$(date +'%Y-%m-%d-%H-%M')"
+          echo ::set-output name=date-time::$(date +'%Y-%m-%d %H:%M')
+          echo ::set-output name=date-time-tag::$(date +'%Y-%m-%d-%H-%M')
           
       - name: Upload FFmpeg ${{ matrix.os }} nonfree
         uses: actions/upload-artifact@v2
@@ -99,7 +99,7 @@ jobs:
           name: ffplay-${{ env.ffmpeg_version }}-${{ needs.build.outputs.helper-git-sha }}-${{ matrix.os }}-nonfree
           
       - name: 7-Zip FFmpeg ${{ matrix.os }} nonfree
-        run: 7z a ffmpeg-${ffmpeg_version}-${{needs.build.outputs.helper-git-sha}}-${{matrix.os}}-nonfree.7z ffmpeg.exe ffprobe.exe ffplay.exe -mx9
+        run: 7z a ffmpeg-${ffmpeg_version}-${{ needs.build.outputs.helper-git-sha }}-${{ matrix.os }}-nonfree.7z ffmpeg.exe ffprobe.exe ffplay.exe -mx9
         
       - name: Upload FFmpeg archive ${{ matrix.os }} nonfree
         uses: actions/upload-artifact@v2

@@ -5,8 +5,6 @@
 
 [FFmpeg](https://ffmpeg.org/) stable nonfree release builds with additional libraries/dependencies.
 
-Version: n4.4.1
-
 [Downloads](https://github.com/AnimMouse/ffmpeg-stable-autobuild/releases)
 
 Schedule of builds: Every time [ffmpeg-windows-build-helpers](https://github.com/rdp/ffmpeg-windows-build-helpers) updates or I updated the repository or when FFmpeg makes a new major release.

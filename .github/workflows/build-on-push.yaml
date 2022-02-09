@@ -4,7 +4,7 @@ on:
     paths:
       - ffmpeg-windows-build-helpers
       - dependencies.sh
-      - .github/workflows/build-on-push.yml
+      - .github/workflows/build-on-push.yaml
     branches-ignore:
       - dependabot/**
       

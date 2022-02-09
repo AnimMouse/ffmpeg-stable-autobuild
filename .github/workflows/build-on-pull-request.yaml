@@ -4,8 +4,8 @@ on:
     paths:
       - ffmpeg-windows-build-helpers
       - dependencies.sh
-      - .github/workflows/build-on-push.yml
-      - .github/workflows/build-on-pull-request.yml
+      - .github/workflows/build-on-push.yaml
+      - .github/workflows/build-on-pull-request.yaml
       
 env:
   ffmpeg_version: n5.0

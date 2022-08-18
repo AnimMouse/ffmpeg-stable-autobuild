@@ -9,7 +9,7 @@ on:
       - dependabot/**
       
 env:
-  ffmpeg_version: n5.0
+  ffmpeg_version: n5.1
   
 jobs:
   build:

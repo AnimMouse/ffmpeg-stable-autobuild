@@ -1,0 +1,141 @@
+name: Build FFmpeg stable
+on:
+  schedule:
+    - cron: '7 11 * * 0'
+  workflow_dispatch:
+  watch:
+    types: [started]
+  
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get FFmpeg latest version
+        id: ffmpeg-info
+        run: |
+          version=$(curl -s https://endoflife.date/api/ffmpeg.json | jq -r .[0].latest)
+          echo version=$version >> $GITHUB_OUTPUT
+          
+      - name: Get ffmpeg-windows-build-helpers latest commit
+        id: ffmpeg-helper-info
+        run: |
+          git_sha=$(gh api repos/rdp/ffmpeg-windows-build-helpers/commits/master -q .sha)
+          echo git-sha=$git_sha >> $GITHUB_OUTPUT
+          echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          
+      - name: Get ffmpeg-stable-autobuild latest build
+        id: ffmpeg-autobuild-info
+        run: |
+          tag_name=$(gh api repos/$GITHUB_REPOSITORY/releases/latest -q .tag_name)
+          echo version=${tag_name:25} >> $GITHUB_OUTPUT
+          echo helper-git-sha=${tag_name:17:7} >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          
+      - name: Check if there is newer version or commit
+        run: >
+          [[ ${{ steps.ffmpeg-info.outputs.version }} != ${{ steps.ffmpeg-autobuild-info.outputs.version }} ]] ||
+          [[ ${{ steps.ffmpeg-helper-info.outputs.git-sha-short }} != ${{ steps.ffmpeg-autobuild-info.outputs.helper-git-sha }} ]]
+          
+    outputs:
+      version: ${{ steps.ffmpeg-info.outputs.version }}
+      helper-git-sha: ${{ steps.ffmpeg-helper-info.outputs.git-sha }}
+      helper-git-sha-short: ${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}
+      
+  build:
+    needs: check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [win64, win32]
+        
+    steps:
+      - name: Checkout ffmpeg-windows-build-helpers
+        uses: actions/checkout@v4
+        with:
+          repository: rdp/ffmpeg-windows-build-helpers
+          ref: ${{ needs.check.outputs.helper-git-sha }}
+          persist-credentials: false
+          
+      - name: Install dependencies
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get -qq install ragel cvs yasm pax nasm gperf autogen autoconf-archive
+          sudo -H pip3 -qq install meson ninja
+          
+      - name: Get current date & time before build
+        id: date-time-before
+        run: echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
+        
+      - name: Compile FFmpeg using ffmpeg-windows-build-helpers
+        run: ./cross_compile_ffmpeg.sh --ffmpeg-git-checkout-version=n${{ needs.check.outputs.version }} --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
+        
+      - name: Get current date & time after build
+        id: date-time-after
+        run: |
+          echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
+          echo date-time-tag=$(date +'%Y-%m-%d-%H-%M') >> $GITHUB_OUTPUT
+          
+      - name: Upload FFmpeg binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-${{ matrix.os }}
+          path: |
+            sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_n${{ needs.check.outputs.version }}/ffmpeg.exe
+            sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_n${{ needs.check.outputs.version }}/ffprobe.exe
+            sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_n${{ needs.check.outputs.version }}/ffplay.exe
+          if-no-files-found: error
+          retention-days: 1
+          
+    outputs:
+      date-time-before: ${{ steps.date-time-before.outputs.date-time }}
+      date-time-after: ${{ steps.date-time-after.outputs.date-time }}
+      date-time-after-tag: ${{ steps.date-time-after.outputs.date-time-tag }}
+      
+  archive:
+    needs: [check, build]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [win64, win32]
+        
+    steps:
+      - name: Download FFmpeg binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: ffmpeg-${{ matrix.os }}
+          
+      - name: 7-Zip FFmpeg binaries
+        run: 7z a -mx9 ffmpeg-${{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z ffmpeg.exe ffprobe.exe ffplay.exe
+        
+      - name: Upload FFmpeg archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-archive-${{ matrix.os }}
+          path: ffmpeg-${{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
+          retention-days: 1
+          compression-level: 0
+          
+  release:
+    needs: [check, build, archive]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download FFmpeg archives
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ffmpeg-archive-*
+          merge-multiple: true
+          
+      - name: Release FFmpeg archives
+        run: |
+          gh release create "${{ needs.build.outputs.date-time-after-tag }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ needs.check.outputs.version }}" \
+          "ffmpeg-${{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}-win64-nonfree.7z" \
+          "ffmpeg-${{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}-win32-nonfree.7z" \
+          -n "FFmpeg nonfree ${{ needs.check.outputs.version }} built on ${{ needs.build.outputs.date-time-after }} started at ${{ needs.build.outputs.date-time-before }}
+          Using ffmpeg-windows-build-helpers git-${{ needs.check.outputs.helper-git-sha }}" \
+          -t "${{ needs.check.outputs.version }} ${{ needs.build.outputs.date-time-after }} ${{ needs.build.outputs.helper-git-sha }}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}

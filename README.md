@@ -1,17 +1,16 @@
 # FFmpeg Stable Autobuilds for Windows
+![Build FFmpeg stable](https://github.com/AnimMouse/ffmpeg-stable-autobuild/workflows/Build%20FFmpeg%20stable/badge.svg)
 
-![Build FFmpeg on push](https://github.com/AnimMouse/ffmpeg-stable-autobuild/workflows/Build%20FFmpeg%20on%20push/badge.svg)
-![Build FFmpeg on pull request](https://github.com/AnimMouse/ffmpeg-stable-autobuild/workflows/Build%20FFmpeg%20on%20pull%20request/badge.svg)
-
-[FFmpeg](https://ffmpeg.org/) stable nonfree release builds with additional libraries/dependencies.
+[FFmpeg](https://ffmpeg.org) stable nonfree release builds with additional libraries/dependencies.
 
 [Downloads](https://github.com/AnimMouse/ffmpeg-stable-autobuild/releases)
 
-Schedule of builds: Every time [ffmpeg-windows-build-helpers](https://github.com/rdp/ffmpeg-windows-build-helpers) updates or I updated the repository or when FFmpeg makes a new major release.
+### Schedule
+Every time [ffmpeg-windows-build-helpers](https://github.com/rdp/ffmpeg-windows-build-helpers) updates or when FFmpeg makes a new major release.\
+The workflow will check if those are updated at 11:07 on Sunday weekly or if someone starred this repository.
 
 #### Release Retention Policy
-Release builds are kept for two years.\
-Last 1 pre-release build are kept every time a release build are released.
+Release builds are kept for two years.
 
 ffmpeg, ffprobe, and ffplay are included.
 
@@ -23,7 +22,7 @@ Powered by [ffmpeg-windows-build-helpers](https://github.com/rdp/ffmpeg-windows-
 
 Uses [GitHub Actions](https://github.com/features/actions) to automatically compile FFmpeg.
 
-Uses [Dependabot](https://dependabot.com/) to automatically update submodules.
+Uses [endoflife.date](https://endoflife.date) to get latest version of FFmpeg.
 
 For stability, use release builds.
 

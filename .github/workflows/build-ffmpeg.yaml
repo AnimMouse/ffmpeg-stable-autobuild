@@ -5,6 +5,9 @@ on:
   workflow_dispatch:
   watch:
     types: [started]
+    
+concurrency:
+  group: ${{ github.workflow }}
   
 jobs:
   check:
@@ -36,8 +39,8 @@ jobs:
           
       - name: Check if there is newer version or commit
         run: >
-          [[ ${{ steps.ffmpeg-info.outputs.version }} != ${{ steps.ffmpeg-autobuild-info.outputs.version }} ]] ||
-          [[ ${{ steps.ffmpeg-helper-info.outputs.git-sha-short }} != ${{ steps.ffmpeg-autobuild-info.outputs.helper-git-sha }} ]]
+          [[ "${{ steps.ffmpeg-info.outputs.version }}" != "${{ steps.ffmpeg-autobuild-info.outputs.version }}" ]] ||
+          [[ "${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.helper-git-sha }}" ]]
           
     outputs:
       version: ${{ steps.ffmpeg-info.outputs.version }}
@@ -59,12 +62,14 @@ jobs:
           ref: ${{ needs.check.outputs.helper-git-sha }}
           persist-credentials: false
           
-      - name: Install dependencies
-        run: |
-          sudo apt-get -qq update
-          sudo apt-get -qq install ragel cvs yasm pax nasm gperf autogen autoconf-archive
-          sudo -H pip3 -qq install meson ninja
+      - name: Install APT dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: ragel cvs yasm pax nasm gperf autogen autoconf-archive
           
+      - name: Install pip dependencies
+        run: sudo -H pip3 -qq install meson ninja
+        
       - name: Get current date & time before build
         id: date-time-before
         run: echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
@@ -107,8 +112,13 @@ jobs:
         with:
           name: ffmpeg-${{ matrix.os }}
           
+      - name: Create LICENSE
+        run: |
+          echo "This version of ffmpeg has nonfree parts compiled in." >> LICENSE
+          echo "Therefore it is not legally redistributable." >> LICENSE
+          
       - name: 7-Zip FFmpeg binaries
-        run: 7z a -mx9 ffmpeg-${{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z ffmpeg.exe ffprobe.exe ffplay.exe
+        run: 7z a -mx9 ffmpeg-${{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z ffmpeg.exe ffprobe.exe ffplay.exe LICENSE
         
       - name: Upload FFmpeg archive
         uses: actions/upload-artifact@v4

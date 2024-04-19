@@ -17,7 +17,7 @@ jobs:
         id: ffmpeg-info
         run: |
           version=$(curl -s https://endoflife.date/api/ffmpeg.json | jq -r .[0].latest)
-          echo version=$version >> $GITHUB_OUTPUT
+          echo version=${version%.0} >> $GITHUB_OUTPUT
           
       - name: Get ffmpeg-windows-build-helpers latest commit
         id: ffmpeg-helper-info

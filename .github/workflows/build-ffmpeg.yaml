@@ -3,6 +3,16 @@ on:
   schedule:
     - cron: '7 11 * * 0'
   workflow_dispatch:
+    inputs:
+      force_build:
+        description: Disable checking for newer commit
+        type: boolean
+      no_release:
+        description: Don't create release
+        type: boolean
+      use_own_fork:
+        description: Use own ffmpeg-windows-build-helpers fork
+        type: boolean
   watch:
     types: [started]
     
@@ -19,10 +29,12 @@ jobs:
           version=$(curl -s https://endoflife.date/api/ffmpeg.json | jq -r .[0].latest)
           echo version=${version%.0} >> $GITHUB_OUTPUT
           
-      - name: Get ffmpeg-windows-build-helpers latest commit
+      - name: Get ${{ inputs.use_own_fork && github.repository_owner || 'rdp' }}/ffmpeg-windows-build-helpers latest commit
         id: ffmpeg-helper-info
         run: |
-          git_sha=$(gh api repos/rdp/ffmpeg-windows-build-helpers/commits/master -q .sha)
+          git_owner=${{ inputs.use_own_fork && github.repository_owner || 'rdp' }}
+          git_sha=$(gh api repos/$git_owner/ffmpeg-windows-build-helpers/commits/master -q .sha)
+          echo git-owner=$git_owner >> $GITHUB_OUTPUT
           echo git-sha=$git_sha >> $GITHUB_OUTPUT
           echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
         env:
@@ -38,12 +50,14 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           
       - name: Check if there is newer version or commit
+        if: '! inputs.force_build'
         run: >
           [[ "${{ steps.ffmpeg-info.outputs.version }}" != "${{ steps.ffmpeg-autobuild-info.outputs.version }}" ]] ||
           [[ "${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.helper-git-sha }}" ]]
           
     outputs:
       version: ${{ steps.ffmpeg-info.outputs.version }}
+      helper-git-owner: ${{ steps.ffmpeg-helper-info.outputs.git-owner }}
       helper-git-sha: ${{ steps.ffmpeg-helper-info.outputs.git-sha }}
       helper-git-sha-short: ${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}
       
@@ -55,10 +69,10 @@ jobs:
         os: [win64, win32]
         
     steps:
-      - name: Checkout ffmpeg-windows-build-helpers
+      - name: Checkout ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
         uses: actions/checkout@v4
         with:
-          repository: rdp/ffmpeg-windows-build-helpers
+          repository: ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
           ref: ${{ needs.check.outputs.helper-git-sha }}
           persist-credentials: false
           
@@ -74,7 +88,7 @@ jobs:
         id: date-time-before
         run: echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
         
-      - name: Compile FFmpeg using ffmpeg-windows-build-helpers
+      - name: Compile FFmpeg ${{ needs.check.outputs.version }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: ./cross_compile_ffmpeg.sh --ffmpeg-git-checkout-version=n${{ needs.check.outputs.version }} --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
         
       - name: Get current date & time after build
@@ -92,7 +106,7 @@ jobs:
             sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_n${{ needs.check.outputs.version }}/ffprobe.exe
             sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_n${{ needs.check.outputs.version }}/ffplay.exe
           if-no-files-found: error
-          retention-days: 1
+          retention-days: ${{ inputs.no_release && '0' || '1' }}
           
     outputs:
       date-time-before: ${{ steps.date-time-before.outputs.date-time }}
@@ -117,19 +131,32 @@ jobs:
           echo "This version of ffmpeg has nonfree parts compiled in." >> LICENSE
           echo "Therefore it is not legally redistributable." >> LICENSE
           
+      - name: Generate artifact attestation for FFmpeg binaries
+        if: '! inputs.no_release'
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: ff*.exe
+          
       - name: 7-Zip FFmpeg binaries
         run: 7z a -mx9 ffmpeg-${{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z ff{mpeg,probe,play}.exe LICENSE
         
+      - name: Generate artifact attestation for FFmpeg archive
+        if: '! inputs.no_release'
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: ffmpeg-${{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
+          
       - name: Upload FFmpeg archive
         uses: actions/upload-artifact@v4
         with:
           name: ffmpeg-archive-${{ matrix.os }}
           path: ffmpeg-${{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
-          retention-days: 1
+          retention-days: ${{ inputs.no_release && '0' || '1' }}
           compression-level: 0
           
   release:
     needs: [check, build, archive]
+    if: '! inputs.no_release'
     runs-on: ubuntu-latest
     steps:
       - name: Download FFmpeg archives
@@ -143,7 +170,7 @@ jobs:
           gh release create "${{ needs.build.outputs.date-time-after-tag }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ needs.check.outputs.version }}" \
           ffmpeg-${{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}-{win64,win32}-nonfree.7z \
           -n "FFmpeg nonfree ${{ needs.check.outputs.version }} built on ${{ needs.build.outputs.date-time-after }} started at ${{ needs.build.outputs.date-time-before }}
-          Using ffmpeg-windows-build-helpers git-${{ needs.check.outputs.helper-git-sha }}" \
+          Using ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers git-${{ needs.check.outputs.helper-git-sha }}" \
           -t "${{ needs.check.outputs.version }} ${{ needs.build.outputs.date-time-after }} ${{ needs.build.outputs.helper-git-sha }}"
         env:
           GITHUB_TOKEN: ${{ github.token }}

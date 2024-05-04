@@ -114,6 +114,9 @@ jobs:
       date-time-after-tag: ${{ steps.date-time-after.outputs.date-time-tag }}
       
   archive:
+    permissions:
+      id-token: write
+      attestations: write
     needs: [check, build]
     runs-on: ubuntu-latest
     strategy:

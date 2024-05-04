@@ -1,6 +1,4 @@
 # FFmpeg Stable Autobuilds for Windows
-![Build FFmpeg stable](https://github.com/AnimMouse/ffmpeg-stable-autobuild/workflows/Build%20FFmpeg%20stable/badge.svg)
-
 [FFmpeg](https://ffmpeg.org) stable nonfree release builds with additional libraries/dependencies.
 
 [Downloads](https://github.com/AnimMouse/ffmpeg-stable-autobuild/releases)

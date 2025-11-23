@@ -67,7 +67,7 @@ jobs:
         
     steps:
       - name: Checkout ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
           ref: ${{ needs.check.outputs.helper-git-sha }}
